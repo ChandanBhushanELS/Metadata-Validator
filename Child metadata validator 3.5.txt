@@ -1,0 +1,877 @@
+function onOpen() {
+    //This is the new standard script for the onOpen trigger that creates a menu item. 
+    var ui = SpreadsheetApp.getUi(); // Or DocumentApp or FormApp. 
+
+    ui.createMenu('Meta-Data')
+        .addItem('Validate Metadata', 'metaData')
+        .addToUi();
+
+
+
+}
+
+function metaData() {
+    var app = SpreadsheetApp;
+    var name = SpreadsheetApp.getActiveSpreadsheet().getName().substring(0, 3) + "_Metadata";
+    //var pname = SpreadsheetApp.getActiveSpreadsheet().getName().substring(0, 3) + "_ParentMetadata";
+    //var aname = SpreadsheetApp.getActiveSpreadsheet().getName().substring(0, 3) + "_Assignments";
+    //var rname = SpreadsheetApp.getActiveSpreadsheet().getName().substring(0, 3) + "_Review";
+    
+    var automateEvelynTBSSheet = SpreadsheetApp.openByUrl("https://docs.google.com/spreadsheets/d/10EGjR49VZGloWZ6o5yLQFZ2l3BrR0e1zzI6YGMcnHxU/");
+    var BookCodeSheet = automateEvelynTBSSheet.getSheetByName("Child book mapping");
+    var BookCodeRange = BookCodeSheet.getRange(1, 1, BookCodeSheet.getLastRow(), 5)
+    var BookCodeValues = BookCodeRange.getValues();
+    var BookCodeToCheck = SpreadsheetApp.getActiveSpreadsheet().getName().substring(0, 3);
+    var parentBookCode="";
+  
+    for(k = 1; k < BookCodeSheet.getLastRow(); k++)
+    {
+      // col 4 is ISBN and col3 is book code
+      //Logger.log(ISBNValues[k][4].toString() + "--" + ISBNValues[k][3].toString());
+      if(BookCodeValues[k][0] == BookCodeToCheck)
+      {
+        parentBookCode = BookCodeValues[k][1].toString();
+      }
+      
+    }
+    var pname = parentBookCode + "_ParentMetadata";
+    //var aSheetName = app.getActiveSpreadsheet().getSheetByName(aname);
+    //var rSheetName = app.getActiveSpreadsheet().getSheetByName(rname);
+    var sSheetName = app.getActiveSpreadsheet().getSheetByName(name);
+    var pSheetName = app.getActiveSpreadsheet().getSheetByName(pname);
+    var TOMSheetName = app.getActiveSpreadsheet().getSheetByName("Title Organization Metadata");
+    var ptomsheet = app.getActiveSpreadsheet().getSheetByName("Parent_Title Organization Metadata (For copying/pa");
+    var ddSheetName = app.getActiveSpreadsheet().getSheetByName("dropdowns");
+  
+    // sheet availablity status
+    var metadataSheetStatus = true;
+    var parentMetadataSheetStatus = true;
+    //var assignmentSheetStatus = true;
+    //var reviewSheetStatus = true;
+    var TOMSheetStatus = true;
+    var PTOMetadataSheetStatus = true;
+    var dropdownsSheetStatus = true;
+    
+    // status of all sheets
+    var finalStatusToRun = false;
+  
+    var sheetStatusMsg = "These sheets are missing: ";
+  
+    if(!pSheetName)
+    {
+      sheetStatusMsg = sheetStatusMsg + pname + ", ";
+      parentMetadataSheetStatus = false;
+    }
+    
+    if(!ptomsheet)
+    {
+      sheetStatusMsg = sheetStatusMsg + "Parent_Title Organization Metadata (For copying/pa" + ", ";
+      PTOMetadataSheetStatus = false;
+    }
+  
+    if(!sSheetName)
+    {
+      sheetStatusMsg = sheetStatusMsg + name + ", ";
+      metadataSheetStatus = false;
+    }
+    
+    
+  
+    if(!TOMSheetName)
+    {
+      sheetStatusMsg = sheetStatusMsg + "Title Organization Metada" + ", " ;
+      TOMSheetStatus = false;
+      
+    }
+  
+    if(!ddSheetName)
+    {
+      sheetStatusMsg = sheetStatusMsg + " dropdowns";
+      dropdownsSheetStatus = false;
+    }
+  
+    if(parentMetadataSheetStatus == true && PTOMetadataSheetStatus == true && metadataSheetStatus == true  && TOMSheetStatus == true && dropdownsSheetStatus == true)
+    {
+      finalStatusToRun = true;
+    }
+    else
+    {
+      Browser.msgBox(sheetStatusMsg + ". Please edit(if wrong) or add(if not) these sheets and re-run the script.");
+    }
+  
+  
+  if(finalStatusToRun == true)
+  {
+    var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    //SpreadsheetApp.getActiveSpreadsheet().getName().substring(0, 3)
+    var bookcode = activeSpreadsheet.getName().substring(0, 3).toString();
+    // create the validation log sheet in the current work book
+   // var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    var tSheetName = activeSpreadsheet.getSheetByName("Validation Log");
+
+    if (tSheetName == null) {
+        tSheetName = activeSpreadsheet.insertSheet();
+        tSheetName.setName("Validation Log");
+    }
+    
+    /*
+    var authorName = "";
+    var authorNameStatus = false;
+    var EAName = ddSheetName.getRange(2,4).getValue();
+    //var AETS = app.openById("10EGjR49VZGloWZ6o5yLQFZ2l3BrR0e1zzI6YGMcnHxU");
+    var automateEvelynTBSSheet = SpreadsheetApp.openByUrl("https://docs.google.com/spreadsheets/d/10EGjR49VZGloWZ6o5yLQFZ2l3BrR0e1zzI6YGMcnHxU/");
+    
+    var AETAuthorSheet = automateEvelynTBSSheet.getSheetByName("Author List");
+    var AETrange = AETAuthorSheet.getRange(1, 1, AETAuthorSheet.getLastRow(), 1);
+    var AETAuthorsList = AETrange.getValues();
+    
+    var ISBNSheet = automateEvelynTBSSheet.getSheetByName("Child book mapping");
+    var ISBNRange = ISBNSheet.getRange(1, 1, ISBNSheet.getLastRow(), 5)
+    var ISBNValues = ISBNRange.getValues();
+    var ISBNtoCheck ="";
+    var logIndex = tSheetName.getLastRow();
+
+    for(k = 1; k < ISBNSheet.getLastRow(); k++)
+    {
+      // col 4 is ISBN and col3 is book code
+      //Logger.log(ISBNValues[k][4].toString() + "--" + ISBNValues[k][3].toString());
+      if(ISBNValues[k][3] == bookcode)
+      {
+        ISBNtoCheck = ISBNValues[k][4].toString();
+      }
+      
+    }
+    //Logger.log(ISBNtoCheck);
+    
+    for(j = 1; j < AETAuthorSheet.getLastRow(); j++)
+    {
+      //Logger.log(AETAuthorsList[j].toString());
+      if(EAName == AETAuthorsList[j].toString())
+      {
+        authorNameStatus = true;
+      }
+    }
+    
+    if(authorNameStatus == true)
+    {
+      authorName = EAName;
+    }
+    else
+    {
+      var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+      tSheetName.getRange(logIndex, 1).setValue("dropdowns");
+      tSheetName.getRange(logIndex, 2).setValue("Author Name");
+      tSheetName.getRange(logIndex, 3).setValue("Author is not in the client's authors list. Please modify and re-run the script.");
+      tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+      logIndex += 1;
+    }
+    
+  */
+    //var tSheetName = app.getActiveSpreadsheet().getSheetByName("Validation Log");
+    
+
+    //var tSheetName = app.getActiveSpreadsheet().getSheetByName("Validation Log");
+    //var cdate = sSheetName.getRange(1, 6).getValue().toString();
+
+    //var rangeData = sSheetName.getDataRange();
+    var lastColumn = sSheetName.getLastColumn();
+    var lastRow = sSheetName.getLastRow();
+    var logIndex = tSheetName.getLastRow() + 1;
+    var errorsCount = logIndex;
+    var TOMlastColumn = TOMSheetName.getLastColumn();
+    var TOMlastRow = TOMSheetName.getLastRow();
+    var TOMrange = TOMSheetName.getRange(1, 1, TOMSheetName.getLastRow(), TOMSheetName.getLastColumn());
+    var TOMvalues = TOMrange.getValues();
+
+    var range = sSheetName.getRange(1, 1, sSheetName.getLastRow(), sSheetName.getLastColumn());
+    var values = range.getValues();
+
+    // headers
+    tSheetName.getRange(logIndex, 1).setValue("Tab");
+    tSheetName.getRange(logIndex, 2).setValue("Error Location");
+    tSheetName.getRange(logIndex, 3).setValue("Error");
+    tSheetName.getRange(logIndex, 4).setValue("Timestamp");
+    tSheetName.getRange(logIndex, 1, 1, 4).setBackground("DarkGrey");
+    tSheetName.getRange(logIndex, 1, 1, 4).setFontColor("White");
+    // tSheetName.getRange(logIndex, 1, 1, 4).setFontStyle("bold");
+    logIndex += 1;
+    // Initials
+    //order = values[1][0].toString(); // Column A 
+    //textbook_code = values[1][1].toString(); // Column B 
+    //question_code	= values[1][2].toString(); // Column C
+    reference_isbn = values[1][3].toString(); // Column D 
+    page = values[1][4]; // Column E 
+    chapter = values[1][5]; // Column F 
+    section = values[1][6].toString(); // Column G 
+    heading = values[1][7].toString(); // Column H
+    q_number = values[1][8].toString(); // Column I
+    q_part = values[1][9].toString(); // Column J
+    no_question_number = values[1][10].toString(); // Column K	
+    inline_question = values[1][11].toString(); // Column L
+    q_type = values[1][12].toString(); // Column M
+    related_group = values[1][13].toString(); // Column N
+    answer_provided = values[1][14].toString(); // Column O	
+    explanation_provided = values[1][15].toString(); // Column P
+    num_answer_options = values[1][16].toString(); // Column Q
+    answer_identifier_format = values[1][17].toString(); // Column R
+    q_unique_code = values[1][18].toString(); // Column S	
+    solution_id = values[1][19].toString(); // Column T
+    author_email = values[1][20].toString(); // Column U
+    date_created = values[1][21].toString(); // Column V
+    Requires_follow_up = values[1][22].toString(); // Column W
+    Duplicates = values[1][23].toString(); // Column X	
+    Parts = values[1][24].toString(); // Column Y
+    Results = values[1][25].toString(); // Column Z
+
+
+    var nColInitialVal = 0;
+    var currChapter = 1;
+    var currHeading = heading;
+    var currQNFlag = 1;
+    var currChapterNumbers = [];
+    var currHeadingNumbers = [];
+    var headsList = [];
+    var colSVals = [];
+    var hqpair = {};
+    var colAVals = [];
+    var colCVals = [];
+    var chapterHeads = [];
+    var cellName = "";
+    var toAuthorCounter = 0;
+    var parentTColValues = pSheetName.getRange(1, 20, pSheetName.getLastRow(), 1).getValues();
+    var parenTValues=parentTColValues.toString().split(",");
+    var cola="";
+    var colb="";
+    var colc="";
+    var cold="";
+    // loop through all rows 
+    for (i = 1; i < TOMlastRow; i++) {
+        //short_form = TOMvalues[i][2].toString(); // Column C    
+      
+      cola = TOMvalues[i][0].toString();
+      colb = TOMvalues[i][1].toString();
+      colc = TOMvalues[i][2].toString();
+      cold = TOMvalues[i][3].toString();
+      
+      if(cola.length > cola.trim().length)
+      {
+        TOMSheetName.getRange(i+1, 0+1).setValue(cola.trim());
+        var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+        tSheetName.getRange(logIndex, 1).setValue("TOM");
+        tSheetName.getRange(logIndex, 2).setValue("Cell A" + (i + 1).toString());
+        tSheetName.getRange(logIndex, 3).setValue("Cell contains extra spaces");
+        tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+        logIndex += 1;
+      }
+      
+      if(colb.length > colb.trim().length)
+      {
+        TOMSheetName.getRange(i+1, 1+1).setValue(colb.trim());
+        var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+        tSheetName.getRange(logIndex, 1).setValue("TOM");
+        tSheetName.getRange(logIndex, 2).setValue("Cell B" + (i + 1).toString());
+        tSheetName.getRange(logIndex, 3).setValue("Cell contains extra spaces");
+        tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+        logIndex += 1;
+      }
+      
+      if(colc.length > colc.trim().length)
+      {
+        TOMSheetName.getRange(i+1, 2+1).setValue(colc.trim());
+        var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+        tSheetName.getRange(logIndex, 1).setValue("TOM");
+        tSheetName.getRange(logIndex, 2).setValue("Cell C" + (i + 1).toString());
+        tSheetName.getRange(logIndex, 3).setValue("Cell contains extra spaces");
+        tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+        logIndex += 1;
+      }
+      
+      if(cold.length > cold.trim().length)
+      {
+        TOMSheetName.getRange(i+1, 3+1).setValue(cold.trim());
+        var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+        tSheetName.getRange(logIndex, 1).setValue("TOM");
+        tSheetName.getRange(logIndex, 2).setValue("Cell D" + (i + 1).toString());
+        tSheetName.getRange(logIndex, 3).setValue("Cell contains extra spaces");
+        tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+        logIndex += 1;
+      }
+
+        if (TOMvalues[i][2].toString().length > 5) {
+            //Logger.log(TOMvalues[i][2].toString() + "--->" + TOMvalues[i][2].toString().length);
+            var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+            tSheetName.getRange(logIndex, 1).setValue("TOM");
+            tSheetName.getRange(logIndex, 2).setValue("Cell C" + (i + 1).toString());
+            tSheetName.getRange(logIndex, 3).setValue("Short form is more than 5 letters");
+            tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+            logIndex += 1;
+
+        }
+
+        var cTOMRowVals = "";
+
+        for (l = 0; l < TOMlastColumn; l++) {
+            cTOMRowVals = cTOMRowVals + TOMvalues[i][l].toString();
+        }
+
+        if (cTOMRowVals.length < 1) {
+            var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+            tSheetName.getRange(logIndex, 1).setValue("TOM");
+            tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+            tSheetName.getRange(logIndex, 3).setValue("Row is empty");
+            tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+            logIndex += 1;
+
+        }
+    }
+
+    // loop through all rows 
+    for (i = 1; i < lastRow; i++) {
+        // Logger.log(i);
+        curr_order = values[i][0]; // Column A 
+        curr_textbook_code = values[i][1].toString(); // Column B 
+        curr_question_code = values[i][2].toString(); // Column C
+        curr_reference_isbn = values[i][3].toString(); // Column D 
+        // Column E
+        curr_page = values[i][5]; // Column F
+        curr_chapter = values[i][6]; // Column G 
+        curr_section = values[i][7].toString(); // Column H 
+        curr_heading = values[i][8].toString(); // Column I
+        curr_q_number = values[i][9].toString(); // Column J
+        curr_q_part = values[i][10].toString(); // Column K
+        curr_no_question_number = values[i][11]; // Column L	
+        curr_inline_question = values[i][12].toString(); // Column M
+        curr_q_type = values[i][13].toString(); // Column N
+        curr_related_group = values[i][14]; // Column O
+        curr_answer_provided = values[i][15].toString(); // Column P	
+        curr_explanation_provided = values[i][16]; // Column Q
+        curr_num_answer_options = values[i][17]; // Column R
+        curr_answer_identifier_format = values[i][18].toString(); // Column S
+      
+      //-----------------------------
+      
+      curr_Parent_Match_Type = values[i][19].toString(); // Column T
+      curr_parent_solution_id = values[i][20].toString(); // Column U
+      //------------------------------------
+      
+      curr_q_unique_code  = values[i][21].toString(); // column V
+      curr_solution_id  = values[i][22].toString(); // column W
+      curr_author_email = values[i][23].toString(); // column X
+      curr_date_created  = values[i][24].toString(); // column Y
+      curr_Duplicates  = values[i][25].toString(); // column Z
+      curr_Parts  = values[i][26].toString(); // column AA
+      curr_Results  = values[i][27].toString();// column AB
+
+       // ---------------------------
+        var cRowVals = "";
+        for (k = 0; k < lastColumn; k++) {
+            cRowVals = cRowVals + values[i][k].toString();
+        }
+
+        if (cRowVals.length < 1) {
+            var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+            tSheetName.getRange(logIndex, 1).setValue("Metadata");
+            tSheetName.getRange(logIndex, 2).setValue("Row " + (i + 1).toString());
+            tSheetName.getRange(logIndex, 3).setValue("Row is empty");
+            tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+            logIndex += 1;
+
+        } else 
+        {
+            // ------------------------------------------
+            if (colAVals.indexOf(curr_order) < 0) 
+            {
+                colAVals.push(curr_order)
+            } else 
+            {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Cell A" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Value is not unique");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            // ------------------------------
+
+            if (colCVals.indexOf(curr_question_code) < 0) {
+                colCVals.push(curr_question_code)
+            } else {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Cell A" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Value is not unique");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+          /*
+            if (curr_Requires_follow_up) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column W can not true");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            */
+          
+          if(curr_Parent_Match_Type.length > 0){
+            if(curr_parent_solution_id.length < 1){
+              var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+              tSheetName.getRange(logIndex, 1).setValue("Metadata");
+              tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+              tSheetName.getRange(logIndex, 3).setValue("Column U needs to be filled, if column T has been filled.");
+              tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+              logIndex += 1;
+            }
+          }
+          
+          if(curr_parent_solution_id.length > 0){
+            if(curr_Parent_Match_Type.length < 1){
+              var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+              tSheetName.getRange(logIndex, 1).setValue("Metadata");
+              tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+              tSheetName.getRange(logIndex, 3).setValue("Column U cannot be filled until column T has been filled.");
+              tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+              logIndex += 1;
+            }
+          }
+          
+          
+            if (curr_Duplicates.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column Z can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_Parts.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column AA can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_Results.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column AB can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_q_type.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column N can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_q_unique_code.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column V can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_solution_id.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column W can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+          /*
+            if (curr_author_email.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column U can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }*/
+            
+          /*
+            if (curr_reference_isbn != ISBNtoCheck) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("ISBN does not match");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            
+          if(authorNameStatus == true)
+          {
+            if (curr_author_email != authorName)
+            {
+              Logger.log(curr_author_email + "--" + authorName);
+              var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+              tSheetName.getRange(logIndex, 1).setValue("Metadata");
+              tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+              tSheetName.getRange(logIndex, 3).setValue("Author name mentioned in the metadata and dropdowns are not matching.");
+              tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+              logIndex += 1;
+            }
+          }
+          */
+            if (curr_date_created.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column Y can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_order.toString().length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column A can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_textbook_code.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column B can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_question_code.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column C can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_reference_isbn.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column D can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_page.toString().length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column F can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_chapter.toString().length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column G can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_section.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column H can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_heading.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column I can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+            if (curr_q_number.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Column J can not have blank values");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+          
+          if(curr_q_number.length > curr_q_number.trim().length)
+          {
+            TOMSheetName.getRange(i+1, 10).setValue(curr_q_number.trim());
+            var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+            tSheetName.getRange(logIndex, 1).setValue("Metadata");
+            tSheetName.getRange(logIndex, 2).setValue("Cell J" + (i + 1).toString());
+            tSheetName.getRange(logIndex, 3).setValue("Cell contains extra spaces");
+            tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+            logIndex += 1;
+          }
+          if(curr_q_part.length > curr_q_part.trim().length)
+          {
+            TOMSheetName.getRange(i+1, 11).setValue(curr_q_part.trim());
+            var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+            tSheetName.getRange(logIndex, 1).setValue("Metadata");
+            tSheetName.getRange(logIndex, 2).setValue("Cell K" + (i + 1).toString());
+            tSheetName.getRange(logIndex, 3).setValue("Cell contains extra spaces");
+            tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+            logIndex += 1;
+          }
+           
+          /*
+            if (i > 1) {
+
+                if (parseInt(curr_page, 10) < parseInt(values[i - 1][4], 10)) {
+                    Logger.log(parseInt(curr_page, 10).toString() + "--" + parseInt(values[i - 1][4], 10) + " in row E" + i.toString());
+                    var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                    tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                    tSheetName.getRange(logIndex, 2).setValue("Cell E" + (i + 1).toString());
+                    tSheetName.getRange(logIndex, 3).setValue("Not in sequential order");
+                    tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                    logIndex += 1;
+                }
+
+            }
+
+            if (i > 1) {
+                if (parseInt(curr_chapter, 10) < parseInt(values[i - 1][5], 10)) {
+                    var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                    tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                    tSheetName.getRange(logIndex, 2).setValue("Cell F" + (i + 1).toString());
+                    tSheetName.getRange(logIndex, 3).setValue("Not in sequential order");
+                    tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                    logIndex += 1;
+                }
+
+            }
+*/
+          /*
+            if (curr_related_group.toString().length != 0 && curr_related_group < nColInitialVal) {
+                // Logger.log(curr_related_group.toString().length.toString() + "--" + curr_related_group.toString());
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Cell O" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Not in sequential order");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+
+            } else if (curr_related_group > nColInitialVal) {
+                nColInitialVal = curr_related_group;
+            }
+          
+          */
+
+            if (curr_q_type == "MCQ" || curr_q_type == "MS" || curr_q_type == "FIB" || curr_q_type == "MAT" || curr_q_type == "ORD" || curr_q_type == "CL") {
+                if (curr_num_answer_options.toString().length < 1) {
+                    var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                    tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                    tSheetName.getRange(logIndex, 2).setValue("Cell R" + (i + 1).toString());
+                    tSheetName.getRange(logIndex, 3).setValue("num_answer_options (Column R) is blank for a question type where it is required. ");
+                    tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                    logIndex += 1;
+                }
+
+            }
+
+            if (curr_q_type == "MCQ" || curr_q_type == "MS" || curr_q_type == "MAT" || curr_q_type == "ORD" || curr_q_type == "CL") {
+                if (curr_answer_identifier_format.length < 1) {
+                    var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                    tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                    tSheetName.getRange(logIndex, 2).setValue("Cell S" + (i + 1).toString());
+                    tSheetName.getRange(logIndex, 3).setValue("answer_identifier_format is blank for a question type where it is required. ");
+                    tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                    logIndex += 1;
+                }
+            }
+          else
+          {
+            if (curr_answer_identifier_format.length > 0) {
+                    var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                    tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                    tSheetName.getRange(logIndex, 2).setValue("Cell S" + (i + 1).toString());
+                    tSheetName.getRange(logIndex, 3).setValue("answer_identifier_format is not blank for a question type where it is required. ");
+                    tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                    logIndex += 1;
+                }
+            
+          }
+
+            if (curr_q_number.indexOf("0") == 0) {
+                if (!curr_no_question_number) {
+                    var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                    tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                    tSheetName.getRange(logIndex, 2).setValue("Cell L" + (i + 1).toString());
+                    tSheetName.getRange(logIndex, 3).setValue("Check values of Col L");
+                    tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                    logIndex += 1;
+                }
+            }
+
+
+          // ---------------------- 
+            if (parseInt(curr_chapter, 10) > parseInt(chapter, 10)) {
+                chapter = curr_chapter;
+                chapterHeads = [];
+            }
+
+            if (curr_no_question_number) {
+                //Logger.log("K" + i + " is True");
+
+                if (curr_q_number.indexOf("0") == 0) {
+
+                    if (chapterHeads.indexOf(curr_heading) < 0) {
+                        chapterHeads.push(curr_heading);
+
+                        if (curr_q_number == "01") {
+                            //Logger.log("l" + i + " is True");
+                           // Logger.log(curr_q_number);
+                        } else {
+                            //Logger.log("I" + (i + 1).toString() + " is not starting with 01");
+                            Logger.log(curr_q_number);
+
+                            var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                            tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                            tSheetName.getRange(logIndex, 2).setValue("Cell J" + (i + 1).toString());
+                            tSheetName.getRange(logIndex, 3).setValue("Check Col J and Col L");
+                            tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                            logIndex += 1;
+
+                        }
+                    }
+
+                }
+
+            }
+
+
+            // check column P for false
+            if (!curr_explanation_provided) {
+                toAuthorCounter += 1;
+            }
+
+            //
+          
+          if(curr_solution_id.indexOf(" ")>0){
+            var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+            tSheetName.getRange(logIndex, 1).setValue("Metadata");
+            tSheetName.getRange(logIndex, 2).setValue("Cell W" + (i + 1).toString());
+            tSheetName.getRange(logIndex, 3).setValue("There is an extra space present in cell");
+            tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+            logIndex += 1;
+          }
+          
+          
+          if(parenTValues.indexOf(curr_parent_solution_id)<1){
+            var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+            tSheetName.getRange(logIndex, 1).setValue("Metadata");
+            tSheetName.getRange(logIndex, 2).setValue("Cell U" + (i + 1).toString());
+            tSheetName.getRange(logIndex, 3).setValue("This solution ID is not present in bookcode_ParentMetadata.");
+            tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+            logIndex += 1;
+          }
+          
+          
+          if(curr_Parent_Match_Type == "Exact"){
+            if(curr_parent_solution_id != curr_solution_id){
+              var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Cell W" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Please check for the format/formulae for col W");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+          }
+
+            if (curr_Results != "Correct") {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Cell AB" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Check Col AB: Incorrect");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+
+            // ---------------------------
+            var cRowVals = "";
+            for (k = 0; k < lastColumn; k++) {
+                cRowVals = cRowVals + values[i][k].toString();
+            }
+
+            if (cRowVals.length < 1) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Row J" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Row is empty");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+
+            }
+            // ------------------------------------------
+
+            if (curr_related_group.toString().length != 0 && curr_related_group < nColInitialVal) {
+                // Logger.log(curr_related_group.toString().length.toString() + "--" + curr_related_group.toString());
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Cell O" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Not in sequential order");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+
+            } else if (curr_related_group > nColInitialVal) {
+                if (curr_related_group == nColInitialVal + 1) {
+                    nColInitialVal = curr_related_group;
+                } else {
+                    var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                    tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                    tSheetName.getRange(logIndex, 2).setValue("Cell O" + (i + 1).toString());
+                    tSheetName.getRange(logIndex, 3).setValue("Not in sequential order");
+                    tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                    logIndex += 1;
+                }
+
+            }
+          
+            // ------------------------------------
+
+            if (curr_q_part.indexOf("0") == 0) {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Cell K" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Values in Column K can not have values with prefix 0");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+
+            }
+
+            //------------------------
+
+            if (colSVals.indexOf(curr_q_unique_code) < 0) {
+                colSVals.push(curr_q_unique_code)
+            } else {
+                var formattedDate = Utilities.formatDate(new Date(), "IST", "yyyy-MM-dd' 'HH:mm:ss");
+                tSheetName.getRange(logIndex, 1).setValue("Metadata");
+                tSheetName.getRange(logIndex, 2).setValue("Cell T" + (i + 1).toString());
+                tSheetName.getRange(logIndex, 3).setValue("Value is not unique");
+                tSheetName.getRange(logIndex, 4).setValue(formattedDate.toString());
+                logIndex += 1;
+            }
+        }
+    } // end of main loop
+
+
+    tSheetName.getRange(errorsCount, 5).setValue("Summary");
+    tSheetName.getRange(errorsCount + 1, 5).setValue("Number of rows validated: " + ((TOMlastRow + lastRow) - 2).toString());
+    tSheetName.getRange(errorsCount + 2, 5).setValue("Number of errors found: " + ((logIndex - errorsCount) - 1).toString());
+    tSheetName.getRange(errorsCount + 3, 5).setValue("Number of solutions to be authored: " + toAuthorCounter.toString());
+
+
+
+
+    // 
+    Logger.log("Done");
+    Browser.msgBox("Metadata and TOM Validation Done!");
+}
+}
